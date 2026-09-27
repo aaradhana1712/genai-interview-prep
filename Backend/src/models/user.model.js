@@ -1,55 +1,54 @@
-const { getPool, sql } = require("../config/database")
+const { getDB } = require("../config/database")
 const crypto = require("crypto")
 
 const userModel = {
     async create({ username, email, password }) {
-        const pool = getPool()
+        const db = await getDB()
         const _id = crypto.randomUUID()
-        const request = pool.request()
-        request.input("_id", sql.NVarChar, _id)
-        request.input("username", sql.NVarChar, username)
-        request.input("email", sql.NVarChar, email.toLowerCase().trim())
-        request.input("password", sql.NVarChar, password)
+        const cleanEmail = email.toLowerCase().trim()
+        const now = new Date().toISOString()
 
-        await request.query(`
-            INSERT INTO users (_id, username, email, password, createdAt, updatedAt)
-            VALUES (@_id, @username, @email, @password, GETDATE(), GETDATE())
-        `)
+        await db.run(
+            `INSERT INTO users (_id, username, email, password, createdAt, updatedAt)
+             VALUES (?, ?, ?, ?, ?, ?)`,
+            [_id, username, cleanEmail, password, now, now]
+        )
 
-        return { _id, username, email: email.toLowerCase().trim(), password }
+        return { _id, username, email: cleanEmail, password, createdAt: now, updatedAt: now }
     },
 
     async findOne(query) {
-        const pool = getPool()
-        const request = pool.request()
+        const db = await getDB()
 
-        let whereClause = ""
-        if (query.$or) {
-            const orConditions = []
-            query.$or.forEach((cond, idx) => {
+        if (query.$or && Array.isArray(query.$or)) {
+            const conditions = []
+            const params = []
+            for (const cond of query.$or) {
                 if (cond.username) {
-                    request.input(`u_${idx}`, sql.NVarChar, cond.username)
-                    orConditions.push(`username = @u_${idx}`)
+                    conditions.push("username = ?")
+                    params.push(cond.username)
                 }
                 if (cond.email) {
-                    request.input(`e_${idx}`, sql.NVarChar, cond.email.toLowerCase().trim())
-                    orConditions.push(`email = @e_${idx}`)
+                    conditions.push("email = ?")
+                    params.push(cond.email.toLowerCase().trim())
                 }
-            })
-            whereClause = orConditions.length > 0 ? `WHERE ${orConditions.join(" OR ")}` : ""
+            }
+            if (conditions.length === 0) return null
+            const sql = `SELECT * FROM users WHERE ${conditions.join(" OR ")} LIMIT 1`
+            const row = await db.get(sql, params)
+            return row || null
         } else if (query.email) {
-            request.input("email", sql.NVarChar, query.email.toLowerCase().trim())
-            whereClause = "WHERE email = @email"
+            const row = await db.get("SELECT * FROM users WHERE email = ? LIMIT 1", [query.email.toLowerCase().trim()])
+            return row || null
         } else if (query.username) {
-            request.input("username", sql.NVarChar, query.username)
-            whereClause = "WHERE username = @username"
+            const row = await db.get("SELECT * FROM users WHERE username = ? LIMIT 1", [query.username])
+            return row || null
         } else if (query._id || query.id) {
-            request.input("_id", sql.NVarChar, query._id || query.id)
-            whereClause = "WHERE _id = @_id"
+            const row = await db.get("SELECT * FROM users WHERE _id = ? LIMIT 1", [query._id || query.id])
+            return row || null
         }
 
-        const result = await request.query(`SELECT TOP 1 * FROM users ${whereClause}`)
-        return result.recordset[0] || null
+        return null
     },
 
     async findById(id) {

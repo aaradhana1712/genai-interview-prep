@@ -1,4 +1,4 @@
-const { getPool, sql } = require("../config/database")
+const { getDB } = require("../config/database")
 const crypto = require("crypto")
 
 function parseReport(row) {
@@ -15,35 +15,34 @@ function parseReport(row) {
 
 const interviewReportModel = {
     async create(data) {
-        const pool = getPool()
+        const db = await getDB()
         const _id = crypto.randomUUID()
-        const request = pool.request()
+        const now = new Date().toISOString()
 
-        request.input("_id", sql.NVarChar, _id)
-        request.input("title", sql.NVarChar, data.title || "Interview Preparation Report")
-        request.input("jobDescription", sql.NVarChar, data.jobDescription || "")
-        request.input("resume", sql.NVarChar, data.resume || "")
-        request.input("selfDescription", sql.NVarChar, data.selfDescription || "")
-        request.input("matchScore", sql.Int, typeof data.matchScore === "number" ? data.matchScore : null)
-        request.input("technicalQuestions", sql.NVarChar, JSON.stringify(data.technicalQuestions || []))
-        request.input("behavioralQuestions", sql.NVarChar, JSON.stringify(data.behavioralQuestions || []))
-        request.input("skillGaps", sql.NVarChar, JSON.stringify(data.skillGaps || []))
-        request.input("preparationPlan", sql.NVarChar, JSON.stringify(data.preparationPlan || []))
-        request.input("atsKeywords", sql.NVarChar, JSON.stringify(data.atsKeywords || null))
-        request.input("user", sql.NVarChar, String(data.user))
+        const title = data.title || "Interview Preparation Report"
+        const jobDescription = data.jobDescription || ""
+        const resume = data.resume || ""
+        const selfDescription = data.selfDescription || ""
+        const matchScore = typeof data.matchScore === "number" ? data.matchScore : null
+        const technicalQuestions = JSON.stringify(data.technicalQuestions || [])
+        const behavioralQuestions = JSON.stringify(data.behavioralQuestions || [])
+        const skillGaps = JSON.stringify(data.skillGaps || [])
+        const preparationPlan = JSON.stringify(data.preparationPlan || [])
+        const atsKeywords = JSON.stringify(data.atsKeywords || null)
+        const user = String(data.user)
 
-        await request.query(`
-            INSERT INTO interview_reports (
+        await db.run(
+            `INSERT INTO interview_reports (
                 _id, title, jobDescription, resume, selfDescription, matchScore,
-                technicalQuestions, behavioralQuestions, skillGaps, preparationPlan, atsKeywords, [user],
+                technicalQuestions, behavioralQuestions, skillGaps, preparationPlan, atsKeywords, user,
                 createdAt, updatedAt
-            )
-            VALUES (
-                @_id, @title, @jobDescription, @resume, @selfDescription, @matchScore,
-                @technicalQuestions, @behavioralQuestions, @skillGaps, @preparationPlan, @atsKeywords, @user,
-                GETDATE(), GETDATE()
-            )
-        `)
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+            [
+                _id, title, jobDescription, resume, selfDescription, matchScore,
+                technicalQuestions, behavioralQuestions, skillGaps, preparationPlan, atsKeywords, user,
+                now, now
+            ]
+        )
 
         return {
             _id,
@@ -52,28 +51,28 @@ const interviewReportModel = {
             behavioralQuestions: data.behavioralQuestions || [],
             skillGaps: data.skillGaps || [],
             preparationPlan: data.preparationPlan || [],
-            createdAt: new Date(),
-            updatedAt: new Date()
+            createdAt: now,
+            updatedAt: now
         }
     },
 
     async findOne(query) {
-        const pool = getPool()
-        const request = pool.request()
+        const db = await getDB()
+        const conditions = []
+        const params = []
 
-        const where = []
         if (query._id) {
-            request.input("_id", sql.NVarChar, String(query._id))
-            where.push("_id = @_id")
+            conditions.push("_id = ?")
+            params.push(String(query._id))
         }
         if (query.user) {
-            request.input("user", sql.NVarChar, String(query.user))
-            where.push("[user] = @user")
+            conditions.push("user = ?")
+            params.push(String(query.user))
         }
 
-        const whereClause = where.length > 0 ? `WHERE ${where.join(" AND ")}` : ""
-        const result = await request.query(`SELECT TOP 1 * FROM interview_reports ${whereClause}`)
-        return parseReport(result.recordset[0])
+        const whereClause = conditions.length > 0 ? `WHERE ${conditions.join(" AND ")}` : ""
+        const row = await db.get(`SELECT * FROM interview_reports ${whereClause} LIMIT 1`, params)
+        return parseReport(row)
     },
 
     async findById(id) {
@@ -81,17 +80,6 @@ const interviewReportModel = {
     },
 
     find(query = {}) {
-        const pool = getPool()
-        const request = pool.request()
-
-        const where = []
-        if (query.user) {
-            request.input("user", sql.NVarChar, String(query.user))
-            where.push("[user] = @user")
-        }
-
-        const whereClause = where.length > 0 ? `WHERE ${where.join(" AND ")}` : ""
-
         const queryObj = {
             _sortOrder: "DESC",
             _fields: "*",
@@ -104,16 +92,27 @@ const interviewReportModel = {
                 return this
             },
             select(fields) {
-                this._fields = "_id, title, matchScore, [user], createdAt, updatedAt"
+                this._fields = "_id, title, matchScore, user, createdAt, updatedAt"
                 return this
             },
             async then(resolve, reject) {
                 try {
-                    const result = await request.query(`
-                        SELECT ${this._fields} FROM interview_reports ${whereClause} ORDER BY createdAt ${this._sortOrder}
-                    `)
-                    const list = result.recordset.map(r => parseReport(r))
-                    resolve(list)
+                    const db = await getDB()
+                    const conditions = []
+                    const params = []
+
+                    if (query.user) {
+                        conditions.push("user = ?")
+                        params.push(String(query.user))
+                    }
+
+                    const whereClause = conditions.length > 0 ? `WHERE ${conditions.join(" AND ")}` : ""
+                    const rows = await db.all(
+                        `SELECT ${this._fields} FROM interview_reports ${whereClause} ORDER BY createdAt ${this._sortOrder}`,
+                        params
+                    )
+                    const parsed = rows.map(r => parseReport(r))
+                    resolve(parsed)
                 } catch (err) {
                     reject(err)
                 }
