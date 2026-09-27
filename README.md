@@ -6,8 +6,8 @@
 
 [![React 19](https://img.shields.io/badge/Frontend-React_19_%7C_Vite_7-61DAFB?style=for-the-badge&logo=react&logoColor=black)](https://react.dev/)
 [![Node.js](https://img.shields.io/badge/Backend-Node.js_%7C_Express_5-339933?style=for-the-badge&logo=node.js&logoColor=white)](https://nodejs.org/)
-[![SQL Server](https://img.shields.io/badge/Database-Microsoft_SQL_Server-CC292B?style=for-the-badge&logo=microsoftsqlserver&logoColor=white)](https://www.microsoft.com/sql-server)
-[![Google Gemini](https://img.shields.io/badge/AI_Engine-Gemini_3_Flash-4285F4?style=for-the-badge&logo=google&logoColor=white)](https://aistudio.google.com/)
+[![SQLite](https://img.shields.io/badge/Database-SQLite_3-003B57?style=for-the-badge&logo=sqlite&logoColor=white)](https://www.sqlite.org/)
+[![Google Gemini](https://img.shields.io/badge/AI_Engine-Gemini_Flash-4285F4?style=for-the-badge&logo=google&logoColor=white)](https://aistudio.google.com/)
 [![License](https://img.shields.io/badge/License-MIT-purple?style=for-the-badge)](LICENSE)
 
 <br/>
@@ -20,13 +20,10 @@
 
 ## 🌐 Live Demo & Deployment
 
-> [!TIP]
-> **Live URL:** Update the link below once your application is deployed on Vercel & Render!
-
 | Service | Status | Link |
 | :--- | :--- | :--- |
-| **Frontend Web App** | 🟢 Production Ready | [👉 Click Here to Open Live App](https://your-genai-app.vercel.app) *(Paste your Vercel link here)* |
-| **Backend API Server** | 🟢 Live Service | [👉 API Endpoint Health](https://your-backend.onrender.com) *(Paste your Render link here)* |
+| **Frontend Web App** | 🟢 Live on Vercel | [👉 Open Live Web App](https://genai-interview-prep.vercel.app) |
+| **Backend API Server** | 🟢 Live on Render | [👉 API Endpoint Health](https://genai-backend-tiqz.onrender.com) |
 
 ---
 
