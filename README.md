@@ -12,7 +12,7 @@
 
 <br/>
 
-[🌐 **Live Demo Application**](#-live-demo--deployment) • [✨ **Features**](#-key-features) • [📐 **System Architecture**](#-system-architecture) • [🚀 **Getting Started**](#-getting-started) • [🔌 **API Endpoints**](#-api-endpoints)
+[🌐 **Live Demo Application**](https://genai-interview-prep-git-main-aaradhana1712s-projects.vercel.app) • [✨ **Features**](#-key-features) • [📐 **System Architecture**](#-system-architecture) • [🚀 **Getting Started**](#-getting-started) • [🔌 **API Endpoints**](#-api-endpoints)
 
 </div>
 
@@ -22,8 +22,8 @@
 
 | Service | Status | Link |
 | :--- | :--- | :--- |
-| **Frontend Web App** | 🟢 Live on Vercel | [👉 Open Live Web App](https://genai-interview-prep.vercel.app) |
-| **Backend API Server** | 🟢 Live on Render | [👉 API Endpoint Health](https://genai-backend-tiqz.onrender.com) |
+| **Frontend Web App** | 🟢 Live on Vercel | [👉 **Open Live Web App**](https://genai-interview-prep-git-main-aaradhana1712s-projects.vercel.app) |
+| **Backend API Server** | 🟢 Live on Render | [👉 **API Endpoint Health**](https://genai-backend-tiqz.onrender.com) |
 
 ---
 
