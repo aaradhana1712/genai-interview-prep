@@ -60,8 +60,12 @@ async function generateInterViewReportController(req, res) {
         })
     } catch (err) {
         console.error("Error generating interview report:", err)
+        let friendlyMessage = err.message || "Failed to generate interview report. Please try again."
+        if (friendlyMessage.includes("503") || friendlyMessage.includes("demand") || friendlyMessage.includes("UNAVAILABLE")) {
+            friendlyMessage = "The AI service is momentarily busy with high traffic. Please wait a few seconds and try clicking Generate again."
+        }
         res.status(500).json({
-            message: err.message || "Failed to generate interview report. Please try again."
+            message: friendlyMessage
         })
     }
 }
