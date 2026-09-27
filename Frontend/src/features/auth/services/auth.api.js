@@ -5,10 +5,22 @@ const api = axios.create({
     withCredentials: true
 })
 
+// Attach Bearer token if present in localStorage (ensures cross-domain auth works on Vercel)
+api.interceptors.request.use((config) => {
+    const token = localStorage.getItem("genai_token")
+    if (token) {
+        config.headers.Authorization = `Bearer ${token}`
+    }
+    return config
+})
+
 export async function register({ username, email, password }) {
     const response = await api.post('/api/auth/register', {
         username, email, password
     })
+    if (response.data?.token) {
+        localStorage.setItem("genai_token", response.data.token)
+    }
     return response.data
 }
 
@@ -16,12 +28,21 @@ export async function login({ email, password }) {
     const response = await api.post("/api/auth/login", {
         email, password
     })
+    if (response.data?.token) {
+        localStorage.setItem("genai_token", response.data.token)
+    }
     return response.data
 }
 
 export async function logout() {
-    const response = await api.get("/api/auth/logout")
-    return response.data
+    try {
+        const response = await api.get("/api/auth/logout")
+        localStorage.removeItem("genai_token")
+        return response.data
+    } catch (err) {
+        localStorage.removeItem("genai_token")
+        throw err
+    }
 }
 
 export async function getMe() {

@@ -5,6 +5,15 @@ const api = axios.create({
     withCredentials: true,
 })
 
+// Attach Bearer token if present in localStorage (ensures cross-domain auth works on Vercel)
+api.interceptors.request.use((config) => {
+    const token = localStorage.getItem("genai_token")
+    if (token) {
+        config.headers.Authorization = `Bearer ${token}`
+    }
+    return config
+})
+
 
 /**
  * @description Service to generate interview report based on user self description, resume and job description.
