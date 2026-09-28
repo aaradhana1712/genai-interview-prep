@@ -1,35 +1,52 @@
+const path = require("path")
+require("dotenv").config({ path: path.resolve(__dirname, "../../.env") })
 const { GoogleGenAI } = require("@google/genai")
 const { z } = require("zod")
 const { zodToJsonSchema } = require("zod-to-json-schema")
 const puppeteer = require("puppeteer")
 
-const ai = new GoogleGenAI({
-    apiKey: process.env.GOOGLE_GENAI_API_KEY
-})
+function getAI() {
+    const apiKey = process.env.GOOGLE_GENAI_API_KEY || process.env.GEMINI_API_KEY
+    if (!apiKey) {
+        throw new Error("GOOGLE_GENAI_API_KEY is not configured in .env file.")
+    }
+    return new GoogleGenAI({ apiKey })
+}
 
 // Highly resilient model hierarchy to prevent 503 high-demand errors
 const FALLBACK_MODELS = [
     "gemini-flash-latest",
     "gemini-3.5-flash",
     "gemini-3.8-flash",
-    "gemini-3-flash-preview"
+    "gemini-3-flash-preview",
+    "gemini-2.5-pro"
 ]
 
 async function generateContentWithFallback({ contents, config }) {
+    const ai = getAI()
     let lastError = null
-    for (const model of FALLBACK_MODELS) {
-        try {
-            const response = await ai.models.generateContent({
-                model,
-                contents,
-                config
-            })
-            return response
-        } catch (err) {
-            console.warn(`[AI Service] Model ${model} encountered issue (${err.status || err.message}). Trying next fallback model...`)
-            lastError = err
-            await new Promise(resolve => setTimeout(resolve, 800))
+
+    // Two-pass retry across all available models
+    for (let pass = 1; pass <= 2; pass++) {
+        for (const model of FALLBACK_MODELS) {
+            try {
+                const response = await ai.models.generateContent({
+                    model,
+                    contents,
+                    config
+                })
+                if (response && response.text) {
+                    return response
+                }
+            } catch (err) {
+                console.warn(`[AI Service - Pass ${pass}] Model ${model} returned: ${err.status || err.message}. Retrying...`)
+                lastError = err
+                // Backoff delay before switching to next model
+                await new Promise(resolve => setTimeout(resolve, 1000))
+            }
         }
+        // Brief pause before second pass
+        await new Promise(resolve => setTimeout(resolve, 1500))
     }
     throw lastError
 }
